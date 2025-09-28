@@ -8,6 +8,10 @@ import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import z from "zod";
 import loginAnimation from "@/assets/login_animation.json";
+import { formSchemeMasuk } from "@/utils/schema";
+import { login } from "./action";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 const libertinusSans = Libertinus_Serif({
   variable: "--font-libertinus-serif",
@@ -15,28 +19,49 @@ const libertinusSans = Libertinus_Serif({
   weight: ["400", "600", "700"],
 });
 
-const formScheme = z.object({
-  email: z.email("Email tidak boleh kosong!"),
-  password: z.string().nonempty("Password tidak boleh kosong!"),
-});
-
-type FormMasukType = z.infer<typeof formScheme>;
+type FormMasukType = z.infer<typeof formSchemeMasuk>;
 
 const Masuk = () => {
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setError,
   } = useForm<FormMasukType>({
     defaultValues: {
       email: "",
       password: "",
     },
-    resolver: zodResolver(formScheme),
+    resolver: zodResolver(formSchemeMasuk),
   });
   const [showPassword, setShowPassword] = useState(false);
-  const handleMasuk: SubmitHandler<FormMasukType> = ({ email, password }) => {
-    alert(email + " " + password);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const handleMasuk: SubmitHandler<FormMasukType> = async ({
+    email,
+    password,
+  }) => {
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
+    setIsLoading(true);
+    const res = await login(formData);
+    setIsLoading(false);
+    if (res.error) {
+      if (res.message === "Invalid login credentials") {
+        setError("email", {
+          message: "Email atau password salah!",
+        });
+        setError("password", {
+          message: "Email atau password salah!",
+        });
+        return;
+      }
+      toast.error(res.message);
+      return;
+    }
+    toast.success("Sign In Success");
+    router.push("/");
   };
   return (
     <div className="min-h-screen flex justify-center gap-10 items-center bg-gradient-to-br from-[#F5F2ED] via-[#f0e6dc] to-[#8B5E3C]">
@@ -107,7 +132,8 @@ const Masuk = () => {
           </div>
           <div className="w-1/2">
             <button
-              className="bg-primary px-4 py-2 w-full text-white rounded font-semibold cursor-pointer hover:bg-primary/95 active:scale-95 transition duration-200"
+              className="bg-primary px-4 py-2 w-full text-white rounded font-semibold cursor-pointer hover:bg-primary/95 active:scale-95 transition duration-200 disabled:bg-gray-600"
+              disabled={isLoading}
               type="submit"
             >
               Masuk

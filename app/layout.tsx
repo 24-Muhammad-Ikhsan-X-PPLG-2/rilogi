@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import AnimateRoute from "@/components/AnimateRoute";
+import { ToastContainer } from "react-toastify";
+import { ThemeProvider } from "@/providers/theme-provider";
+import { ChatProvider } from "@/providers/chat-provider";
 
 const InterFont = Inter({
   variable: "--font-inter",
@@ -20,11 +23,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
       <body
         className={`${InterFont.variable} ${InterFont.className} antialiased overflow-x-hidden`}
       >
-        <AnimateRoute>{children}</AnimateRoute>
+        <ChatProvider>
+          <ThemeProvider>
+            <AnimateRoute>{children}</AnimateRoute>
+            <ToastContainer draggable />
+          </ThemeProvider>
+        </ChatProvider>
       </body>
     </html>
   );

@@ -9,6 +9,8 @@ import { SubmitHandler, useForm } from "react-hook-form";
 import z from "zod";
 import zxcvbn from "zxcvbn";
 import registerAnimation from "@/assets/register_animation.json";
+import { createUser } from "./actions";
+import { formSchemeDaftar } from "@/utils/schema";
 
 const libertinusSans = Libertinus_Serif({
   variable: "--font-libertinus-serif",
@@ -16,22 +18,7 @@ const libertinusSans = Libertinus_Serif({
   weight: ["400", "600", "700"],
 });
 
-const formScheme = z.object({
-  email: z.email("Email tidak boleh kosong!"),
-  username: z
-    .string()
-    .nonempty("Username tidak boleh kosong!")
-    .min(6, "Username minimal 6 karakter!"),
-  password: z
-    .string()
-    .nonempty("Password tidak boleh kosong!")
-    .min(8, "Password minimal 8 karakter!")
-    .regex(/[A-Za-z]/, "Password harus mengandung huruf")
-    .regex(/\d/, "Password harus mengandung angka")
-    .regex(/[^A-Za-z0-9]/, "Password harus mengandung simbol"),
-});
-
-type FormDaftarType = z.infer<typeof formScheme>;
+type FormDaftarType = z.infer<typeof formSchemeDaftar>;
 
 const Daftar = () => {
   const {
@@ -45,19 +32,25 @@ const Daftar = () => {
       username: "",
       password: "",
     },
-    resolver: zodResolver(formScheme),
+    resolver: zodResolver(formSchemeDaftar),
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const password = watch("password");
   const strongthPassword = zxcvbn(password);
-  const handleDaftar: SubmitHandler<FormDaftarType> = ({
+  const handleDaftar: SubmitHandler<FormDaftarType> = async ({
     email,
     password,
     username,
   }) => {
-    alert(
-      email + " " + password + " " + username + " " + strongthPassword.score
-    );
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("username", username);
+    formData.append("password", password);
+    setIsLoading(true);
+    const res = await createUser(formData);
+    setIsLoading(false);
+    alert(res.message);
   };
   return (
     <div className="min-h-screen flex gap-10 justify-center items-center bg-gradient-to-br from-[#F5F2ED] via-[#f0e6dc] to-[#8B5E3C]">
@@ -135,8 +128,9 @@ const Daftar = () => {
           </div>
           <div className="w-1/2">
             <button
-              className="bg-primary px-4 py-2 w-full text-white rounded font-semibold cursor-pointer hover:bg-primary/95 active:scale-95 transition duration-200"
+              className="bg-primary px-4 py-2 w-full text-white rounded font-semibold cursor-pointer hover:bg-primary/95 active:scale-95 transition duration-200 disabled:bg-gray-600"
               type="submit"
+              disabled={isLoading}
             >
               Daftar
             </button>
