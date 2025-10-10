@@ -12,6 +12,7 @@ import {
   PostgrestMaybeSingleResponse,
   PostgrestResponse,
   RealtimePostgresChangesPayload,
+  User,
 } from "@supabase/supabase-js";
 import {
   createContext,
@@ -29,157 +30,40 @@ import { Message } from "react-hook-form";
 interface ChatContextProps {
   chatWith: string;
   setChatWith: Dispatch<SetStateAction<string>>;
-  kontak: ChatContact[];
-  setKontak: Dispatch<SetStateAction<ChatContact[]>>;
-  messages: MessageType[];
-  setMessages: Dispatch<SetStateAction<MessageType[]>>;
+  kontakGlobal: ChatContact[];
+  setKontakGlobal: Dispatch<SetStateAction<ChatContact[]>>;
+  contextMenuMessage: boolean;
+  setContextMenuMessage: Dispatch<SetStateAction<boolean>>;
 }
+
+export type lastReadType = {
+  id: string;
+  user_id: string;
+  contact_id: string;
+  last_read_at: string;
+};
 
 const ChatContext = createContext<ChatContextProps | undefined>(undefined);
 
 export const ChatProvider: FC<PropsWithChildren> = ({ children }) => {
   const supabase = createClient();
   const [chatWith, setChatWith] = useState("");
-  const [kontak, setKontak] = useState<ChatContact[]>([]);
-  const [profile, setProfile] = useState<ProfileType | null>(null);
-  const [messages, setMessages] = useState<MessageType[]>([]);
-  const profileRef = useRef<ProfileType>(null);
-  const messagesRef = useRef<MessageType[]>(null);
-  const kontakRef = useRef<ChatContact[]>(null);
-  useEffect(() => {
-    profileRef.current = profile;
-  }, [profile]);
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
-  useEffect(() => {
-    kontakRef.current = kontak;
-  }, [kontak]);
-  useEffect(() => {
-    supabase.auth.getUser().then(async (data) => {
-      const {
-        data: { user },
-      } = data;
-      if (!user) return;
-      const { data: DataProfile } = (await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle()) as PostgrestMaybeSingleResponse<ProfileType>;
-      const { data: DataKontak } = (await supabase
-        .from("kontak")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle()) as PostgrestMaybeSingleResponse<KontakType>;
-      const { data: DataMessages } = (await supabase
-        .from("pesan")
-        .select("*")) as PostgrestResponse<MessageType>;
-      setProfile(DataProfile);
-      setMessages(DataMessages ?? []);
-      const { data: lastRead } = await supabase
-        .from("last_read")
-        .select("contact_id, last_read_at")
-        .eq("user_id", DataProfile?.rilo_id);
+  const [kontakGlobal, setKontakGlobal] = useState<ChatContact[]>([]);
+  const [contextMenuMessage, setContextMenuMessage] = useState(false);
 
-      const lastReadMap: Record<string, string> = {};
-      lastRead?.forEach((row) => {
-        lastReadMap[row.contact_id] = row.last_read_at;
-      });
-      const contacts = mergeChatWithContacts(
-        DataMessages ?? [],
-        DataKontak?.list_kontak ?? [],
-        DataProfile?.rilo_id ?? "",
-        lastReadMap
-      );
-      console.log(contacts);
-      setKontak(contacts ?? []);
-    });
-    const kontakChannel = supabase
-      .channel("kontak-channel")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "kontak" },
-        handleKontak
-      )
-      .subscribe();
+  // refs untuk realtime update
 
-    const messagesChannel = supabase
-      .channel("pesan-channel")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "pesan" },
-        handleMessage
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(kontakChannel);
-      supabase.removeChannel(messagesChannel);
-    };
-  }, []);
-  const handleKontak = async (
-    payload: RealtimePostgresChangesPayload<KontakType>
-  ) => {
-    if (
-      payload.eventType === "UPDATE" &&
-      profileRef.current &&
-      messagesRef.current
-    ) {
-      const { data: lastRead } = await supabase
-        .from("last_read")
-        .select("contact_id, last_read_at")
-        .eq("user_id", profileRef.current.rilo_id);
+  // Hanya pakai payload, tanpa fetch ulang last_read
 
-      const lastReadMap: Record<string, string> = {};
-      lastRead?.forEach((row) => {
-        lastReadMap[row.contact_id] = row.last_read_at;
-      });
-      const contacts = mergeChatWithContacts(
-        messagesRef.current ?? [],
-        payload.new?.list_kontak ?? [],
-        profileRef.current?.rilo_id ?? "",
-        lastReadMap
-      );
-      setKontak(contacts ?? []);
-    }
-  };
-  const handleMessage = async (
-    payload: RealtimePostgresChangesPayload<MessageType>
-  ) => {
-    if (
-      payload.eventType === "INSERT" &&
-      messagesRef.current &&
-      kontakRef.current &&
-      profileRef.current
-    ) {
-      const { data: lastRead } = await supabase
-        .from("last_read")
-        .select("contact_id, last_read_at")
-        .eq("user_id", profileRef.current.rilo_id);
-
-      const lastReadMap: Record<string, string> = {};
-      lastRead?.forEach((row) => {
-        lastReadMap[row.contact_id] = row.last_read_at;
-      });
-      const messages = [...messagesRef.current, payload.new];
-      const contacts = mergeChatWithContacts(
-        messages ?? [],
-        kontakRef.current,
-        profileRef.current.rilo_id,
-        lastReadMap
-      );
-      setKontak(contacts);
-      setMessages(messages);
-    }
-  };
   return (
     <ChatContext.Provider
       value={{
         chatWith,
         setChatWith,
-        kontak,
-        setKontak,
-        messages,
-        setMessages,
+        kontakGlobal,
+        setKontakGlobal,
+        contextMenuMessage,
+        setContextMenuMessage,
       }}
     >
       {children}

@@ -1,6 +1,6 @@
 "use server";
 
-import { generateTenDigit } from "@/utils/lib";
+import { generateTenDigit } from "@/utils/supabase/lib";
 import { formSchemeDaftar } from "@/utils/schema";
 import { createClient } from "@/utils/supabase/server";
 

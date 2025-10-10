@@ -20,6 +20,11 @@ const eslintConfig = [
       "next-env.d.ts",
     ],
   },
+  {
+    rules: {
+      "@typescript-eslint/no-non-null-asserted-optional-chain": "off",
+    },
+  },
 ];
 
 export default eslintConfig;

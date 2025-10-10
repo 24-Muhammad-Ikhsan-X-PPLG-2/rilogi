@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Verifikasi Akun Rilogi</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Poppins", Arial, sans-serif;
+        background: linear-gradient(135deg, #f5e6d3, #e7c9a9);
+        color: #4b2e0d;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 40px auto;
+        background: #fffaf5;
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        padding: 32px;
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 24px;
+        color: #5a3b16;
+        margin-bottom: 8px;
+      }
+
+      p {
+        font-size: 16px;
+        line-height: 1.6;
+        margin: 8px 0 24px;
+      }
+
+      .button {
+        display: inline-block;
+        background-color: #a5652a;
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: background 0.2s ease;
+      }
+
+      .button:hover {
+        background-color: #8a5223;
+      }
+
+      .footer {
+        margin-top: 32px;
+        font-size: 12px;
+        color: #6b4c2e;
+      }
+
+      .quote {
+        font-style: italic;
+        color: #805b2b;
+        margin: 20px 0;
+      }
+
+      .logo {
+        font-size: 28px;
+        font-weight: 700;
+        color: #7a4c1f;
+        margin-bottom: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">Rilogi</div>
+      <h1>Selamat Datang di Rilogi 👋</h1>
+      <p>
+        Kami senang kamu bergabung! Klik tombol di bawah ini untuk memverifikasi
+        email kamu dan mulai ngobrol.
+      </p>
+
+      <a href="{{ .ConfirmationURL }}" class="button">Verifikasi Email</a>
+
+      <div class="quote">
+        "Obrolan Biasa, Jadi Luar Biasa."<br />
+        ~ Rilogi 2025
+      </div>
+
+      <div class="footer">
+        Jika kamu tidak mendaftar di Rilogi, abaikan email ini.<br />
+        &copy; 2025 Rilogi. Semua hak dilindungi.
+      </div>
+    </div>
+  </body>
+</html>

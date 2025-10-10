@@ -13,7 +13,6 @@ import React, {
 import { SubmitHandler, useForm } from "react-hook-form";
 import z from "zod";
 import { AddContactAction } from "./action-add-contact";
-import { createClient } from "@/utils/supabase/client";
 import { toast } from "react-toastify";
 import { useTheme } from "@/providers/theme-provider";
 
@@ -21,9 +20,14 @@ type FormAddContact = z.infer<typeof formSchemeAddContact>;
 type AddContactProps = {
   show: boolean;
   setShow: Dispatch<SetStateAction<boolean>>;
+  defaultRiloId?: string;
 };
 
-const AddContact: FC<AddContactProps> = ({ setShow, show }) => {
+const AddContact: FC<AddContactProps> = ({
+  setShow,
+  show,
+  defaultRiloId = "",
+}) => {
   const {
     register,
     handleSubmit,
@@ -102,29 +106,58 @@ const AddContact: FC<AddContactProps> = ({ setShow, show }) => {
           onSubmit={handleSubmit(tambahKontak)}
           className="mt-3 flex flex-col gap-3"
         >
-          <div>
-            <label
-              htmlFor="rilo_id"
-              className={`font-semibold text-base pl-1 ${
-                errors.rilo_id ? "text-red-600" : ""
-              }`}
-            >
-              Rilo id
-            </label>
-            <input
-              type="number"
-              className={`w-full outline-none border px-4 rounded py-2 ${
-                errors.rilo_id ? "border-red-600" : "border-primary"
-              }`}
-              placeholder="...."
-              {...register("rilo_id")}
-            />
-            {errors.rilo_id && (
-              <p className="text-red-600 text-sm mt-1">
-                {errors.rilo_id?.message}
-              </p>
-            )}
-          </div>
+          {defaultRiloId.trim() !== "" ? (
+            <div>
+              <label
+                htmlFor="rilo_id"
+                className={`font-semibold text-base pl-1 ${
+                  errors.rilo_id ? "text-red-600" : ""
+                }`}
+              >
+                Rilo id
+              </label>
+              <input
+                type="number"
+                className={`w-full outline-none border px-4 rounded py-2 ${
+                  errors.rilo_id ? "border-red-600" : "border-primary"
+                }`}
+                placeholder="...."
+                value={defaultRiloId}
+                readOnly
+                {...register("rilo_id")}
+              />
+              {errors.rilo_id && (
+                <p className="text-red-600 text-sm mt-1">
+                  {errors.rilo_id?.message}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div>
+              <label
+                htmlFor="rilo_id"
+                className={`font-semibold text-base pl-1 ${
+                  errors.rilo_id ? "text-red-600" : ""
+                }`}
+              >
+                Rilo id
+              </label>
+              <input
+                type="number"
+                className={`w-full outline-none border px-4 rounded py-2 ${
+                  errors.rilo_id ? "border-red-600" : "border-primary"
+                }`}
+                placeholder="...."
+                {...register("rilo_id")}
+              />
+              {errors.rilo_id && (
+                <p className="text-red-600 text-sm mt-1">
+                  {errors.rilo_id?.message}
+                </p>
+              )}
+            </div>
+          )}
+
           <div>
             <label
               htmlFor="nama_kontak"

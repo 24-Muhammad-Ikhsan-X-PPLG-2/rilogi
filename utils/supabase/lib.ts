@@ -13,3 +13,8 @@ export async function getUserProfile(user: User) {
     .maybeSingle()) as PostgrestMaybeSingleResponse<ProfileType>;
   return data;
 }
+export async function generateTenDigit(): Promise<string> {
+  return Math.floor(Math.random() * 1_000_000_0000) // 0 s/d 9,999,999,999
+    .toString()
+    .padStart(10, "0");
+}

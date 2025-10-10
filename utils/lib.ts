@@ -1,7 +1,15 @@
+"use client";
 import { ZodNull } from "zod/v3";
 import { createClient } from "./supabase/client";
 import { KontakType, ListKontakType } from "./types/kontak";
 import { MessageType } from "./types/message";
+import {
+  PostgrestMaybeSingleResponse,
+  PostgrestResponse,
+} from "@supabase/supabase-js";
+import { BlockKontakType } from "./types/block_kontak";
+import { useEffect } from "react";
+import { db } from "./db";
 
 export function generateTenDigit(): string {
   return Math.floor(Math.random() * 1_000_000_0000) // 0 s/d 9,999,999,999
@@ -74,11 +82,16 @@ export type ChatContact = {
   unreadCount: number;
 };
 
+export function normalizeDate(date: string | Date) {
+  return new Date(date).getTime();
+}
+
 export function mergeChatWithContacts(
   messages: MessageType[],
   kontak: ListKontakType[],
   currentUserId: string,
-  lastReadMap: Record<string, string> // key = rilo_id, value = ISO string last read
+  lastReadMap: Record<string, string>, // key = rilo_id, value = ISO string last read
+  activeChatId?: string
 ): ChatContact[] {
   const normalize = (s: string) => s.replace(/\s+/g, "").replace(/^\+/, "");
   const curKey = normalize(currentUserId);
@@ -104,44 +117,232 @@ export function mergeChatWithContacts(
     const partnerRaw = fromN === curKey ? msg.to : msg.from;
     const partnerKey = normalize(partnerRaw);
 
-    // Update last message
+    // update last message
     const existing = lastMessageMap.get(partnerKey);
-    if (!existing || new Date(msg.created_at) > new Date(existing.created_at)) {
+    if (
+      !existing ||
+      Date.parse(msg.created_at) > Date.parse(existing.created_at)
+    ) {
       lastMessageMap.set(partnerKey, { ...msg, partnerRaw });
     }
 
-    // Hitung unread
-    const lastReadTime = lastReadMap[partnerKey] ?? "1970-01-01";
-    if (
-      new Date(msg.created_at) > new Date(lastReadTime) &&
-      msg.from !== curKey
-    ) {
+    // hitung unread
+    const lastReadTime = lastReadMap[partnerKey] ?? "1970-01-01T00:00:00.000Z";
+    const msgTime = normalizeDate(msg.created_at);
+    const readTime = normalizeDate(lastReadTime);
+
+    if (msgTime > readTime + 3000 && msg.from !== curKey) {
       unreadCountMap.set(partnerKey, (unreadCountMap.get(partnerKey) ?? 0) + 1);
     }
   }
 
-  const result: ChatContact[] = kontak.map((c) => {
+  const result: ChatContact[] = [];
+
+  // helper untuk format lastMessage
+  const formatLastMessage = (msg?: MessageType | null) => {
+    if (!msg) return null;
+
+    const isFromMe = normalize(msg.from) === curKey;
+    const prefix = isFromMe ? "You: " : "";
+
+    if (msg.delete) return `${prefix}Pesan dihapus`;
+
+    return `${prefix}${msg.pesan}`;
+  };
+
+  // semua kontak
+  for (const c of kontak) {
     const key = normalize(c.rilo_id);
     const lastMsg = lastMessageMap.get(key);
 
-    return {
+    result.push({
       rilo_id: c.rilo_id,
       nama_kontak: c.nama_kontak,
-      lastMessage: lastMsg?.pesan ?? null,
+      lastMessage: formatLastMessage(lastMsg) ?? null,
       lastMessageTime: lastMsg?.created_at ?? null,
-      unreadCount: unreadCountMap.get(key) ?? 0,
-    };
-  });
+      unreadCount:
+        activeChatId && normalize(activeChatId) === key
+          ? 0
+          : unreadCountMap.get(key) ?? 0,
+    });
+  }
+
+  // kontak dari chat asing (tidak ada di phonebook)
+  for (const [key, lastMsg] of lastMessageMap) {
+    if (!contactMap.has(key)) {
+      result.push({
+        rilo_id: lastMsg.partnerRaw,
+        nama_kontak: lastMsg.partnerRaw,
+        lastMessage: formatLastMessage(lastMsg) ?? null,
+        lastMessageTime: lastMsg.created_at ?? null,
+        unreadCount:
+          activeChatId && normalize(activeChatId) === key
+            ? 0
+            : unreadCountMap.get(key) ?? 0,
+      });
+    }
+  }
 
   result.sort((a, b) => {
     if (!a.lastMessageTime && !b.lastMessageTime) return 0;
     if (!a.lastMessageTime) return 1;
     if (!b.lastMessageTime) return -1;
-    return (
-      new Date(b.lastMessageTime).getTime() -
-      new Date(a.lastMessageTime).getTime()
-    );
+    return Date.parse(b.lastMessageTime) - Date.parse(a.lastMessageTime);
   });
 
   return result;
+}
+
+export function filterMessagesByBlock(
+  messages: MessageType[],
+  currentUser: string,
+  blocks: BlockKontakType[]
+): MessageType[] {
+  // Jika tidak ada blok sama sekali, kembalikan semua pesan
+  if (!blocks || blocks.length === 0) return messages;
+
+  // Buat map user yang punya relasi blok dengan currentUser
+  const relatedBlocks = blocks.filter(
+    (b) => b.user === currentUser || b.to_user === currentUser
+  );
+
+  // Jika currentUser tidak terlibat dalam blok apa pun
+  if (relatedBlocks.length === 0) return messages;
+
+  // Filter pesan berdasarkan waktu blok dan siapa yang memblok siapa
+  return messages.filter((msg) => {
+    // Cari apakah pesan ini melibatkan user yang pernah diblok/diblokir
+    const block = relatedBlocks.find(
+      (b) =>
+        (b.user === msg.from && b.to_user === msg.to) ||
+        (b.user === msg.to && b.to_user === msg.from)
+    );
+
+    // Kalau tidak ada blok yang relevan dengan pesan ini → tampilkan
+    if (!block) return true;
+
+    const blockTime = new Date(block.created_at).getTime();
+    const msgTime = new Date(msg.created_at).getTime();
+
+    // Logika filtering:
+    // 1️⃣ Jika currentUser adalah yang diblok → dia tidak bisa lihat pesan baru dari pemblokir
+    if (block.user !== currentUser && block.to_user === currentUser) {
+      return msgTime <= blockTime || msg.from === currentUser;
+    }
+
+    // 2️⃣ Jika currentUser yang memblok → dia tidak bisa lihat pesan baru dari target
+    if (block.user === currentUser) {
+      return msgTime <= blockTime || msg.from === currentUser;
+    }
+
+    // Default: tampilkan jika tidak melibatkan blok
+    return true;
+  });
+}
+
+export function useSafeAsyncEffect(
+  effect: (isMounted: () => boolean) => void | Promise<void>,
+  deps: any[]
+) {
+  useEffect(() => {
+    let active = true;
+    const isMounted = () => active;
+
+    effect(isMounted);
+    return () => {
+      active = false;
+    };
+  }, deps);
+}
+
+export async function updateLastRead(user_id: string, contact_id: string) {
+  const supabase = createClient();
+  const { error } = await supabase.from("last_read").upsert(
+    {
+      user_id,
+      contact_id,
+      last_read_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "user_id, contact_id",
+    }
+  );
+  if (error) {
+    console.error(error);
+  }
+}
+
+export function generateFiveDigitNumber(): number {
+  return Math.floor(10000 + Math.random() * 90000);
+}
+
+export async function sendMessage(user_id: string, to: string, pesan: string) {
+  const supabase = createClient();
+  const { data: DataBlockKontak } = (await supabase
+    .from("block_kontak")
+    .select("*")) as PostgrestResponse<BlockKontakType>;
+  const blockKontak = DataBlockKontak?.find(
+    (val) =>
+      (val.user === user_id && val.to_user === to) ||
+      (val.user === to && val.to_user === user_id)
+  );
+  if (blockKontak) {
+    await db?.messages.put({
+      id: generateFiveDigitNumber(),
+      from: user_id,
+      to,
+      pesan,
+      delete: false,
+      created_at: new Date().toISOString(),
+    });
+    return;
+  }
+  const { error } = await supabase.from("pesan").insert({
+    from: user_id,
+    to,
+    pesan,
+  });
+  if (error) {
+    console.error(error);
+  }
+}
+
+export async function updateContact(
+  userRiloId: string,
+  userId: string,
+  messages: MessageType[]
+) {
+  const supabase = createClient();
+  const { data: DataKontak } = (await supabase
+    .from("kontak")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle()) as PostgrestMaybeSingleResponse<KontakType>;
+  const { data: lastRead } = await supabase
+    .from("last_read")
+    .select("contact_id, last_read_at")
+    .eq("user_id", userRiloId);
+
+  const map: Record<string, string> = {};
+  lastRead?.forEach((row) => {
+    map[row.contact_id] = row.last_read_at;
+  });
+  const contacts = mergeChatWithContacts(
+    messages,
+    DataKontak?.list_kontak ?? [],
+    userRiloId,
+    map
+  );
+  return contacts;
+}
+
+export function getInitials(name: string): string {
+  return (
+    name
+      ?.trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase())
+      .join("") || ""
+  );
 }
