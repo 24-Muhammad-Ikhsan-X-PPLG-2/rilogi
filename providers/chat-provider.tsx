@@ -1,19 +1,5 @@
 "use client";
-import {
-  ChatContact,
-  getRecentContacts,
-  mergeChatWithContacts,
-} from "@/utils/lib";
-import { createClient } from "@/utils/supabase/client";
-import { KontakType, ListKontakType } from "@/utils/types/kontak";
-import { MessageType } from "@/utils/types/message";
-import { ProfileType } from "@/utils/types/profile";
-import {
-  PostgrestMaybeSingleResponse,
-  PostgrestResponse,
-  RealtimePostgresChangesPayload,
-  User,
-} from "@supabase/supabase-js";
+import { ChatContact } from "@/utils/lib";
 import {
   createContext,
   Dispatch,
@@ -21,11 +7,8 @@ import {
   PropsWithChildren,
   SetStateAction,
   useContext,
-  useEffect,
-  useRef,
   useState,
 } from "react";
-import { Message } from "react-hook-form";
 
 interface ChatContextProps {
   chatWith: string;
@@ -46,7 +29,6 @@ export type lastReadType = {
 const ChatContext = createContext<ChatContextProps | undefined>(undefined);
 
 export const ChatProvider: FC<PropsWithChildren> = ({ children }) => {
-  const supabase = createClient();
   const [chatWith, setChatWith] = useState("");
   const [kontakGlobal, setKontakGlobal] = useState<ChatContact[]>([]);
   const [contextMenuMessage, setContextMenuMessage] = useState(false);

@@ -63,7 +63,7 @@ const Chat: FC<ChatProps> = ({ profile, messages }) => {
       return;
     }
     const lawanBicara = data.list_kontak.filter(
-      (item) => item.rilo_id == chatWith
+      (item) => item.rilo_id == chatWith,
     );
     if (lawanBicara.length === 0) {
       setProfileLawanBicara({
@@ -80,7 +80,7 @@ const Chat: FC<ChatProps> = ({ profile, messages }) => {
       ?.filter(
         (val) =>
           (val.user == profile.rilo_id && val.to_user == chatWith) ||
-          (val.user == chatWith && val.to_user == profile.rilo_id)
+          (val.user == chatWith && val.to_user == profile.rilo_id),
       )
       .at(0);
     if (blockKontakFilter && blockKontakFilter.user == profile.rilo_id) {
@@ -139,14 +139,21 @@ const Chat: FC<ChatProps> = ({ profile, messages }) => {
             {/* Header */}
             <div className="w-full sticky top-0 shadow-xl bg-secondary p-3 rounded-xl flex justify-between items-center z-10">
               <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-primary flex justify-center items-center text-white font-semibold">
-                  {getInitials(profileLawanBicara?.nama_kontak!)}
+                <div
+                  className={`h-10 w-10 rounded-full ${profileLawanBicara ? "bg-primary" : "bg-gray-500 animate-pulse"} flex justify-center items-center text-white font-semibold`}
+                >
+                  {profileLawanBicara &&
+                    getInitials(profileLawanBicara.nama_kontak)}
                 </div>
-                <div>
-                  <p className="text-base font-semibold">
-                    {profileLawanBicara?.nama_kontak}
-                  </p>
-                </div>
+                {profileLawanBicara ? (
+                  <div>
+                    <p className="text-base font-semibold">
+                      {profileLawanBicara?.nama_kontak}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="w-40 h-10 bg-gray-500 rounded-full animate-pulse"></div>
+                )}
               </div>
               <Bars3Icon className="w-8" />
             </div>

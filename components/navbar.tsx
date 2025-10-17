@@ -62,8 +62,8 @@ const Navbar = () => {
         showBgNavbar ? "bg-secondary/40" : "bg-transparent"
       } transition-all duration-300 ease-in-out backrop-filter backdrop-blur-lg z-[99] `}
     >
-      <div className="h-14 flex items-center justify-between px-14">
-        <div className="flex gap-4 text-base items-center">
+      <div className="h-14 flex items-center md:justify-between justify-center md:px-14">
+        <div className="md:flex hidden gap-4 text-base items-center">
           <TentangNavbar />
           <FiturNavbar />
         </div>
@@ -72,7 +72,7 @@ const Navbar = () => {
         >
           Rilogi
         </h1>
-        <div className="flex gap-4 items-center text-base">
+        <div className="md:flex hidden gap-4 items-center text-base">
           <DaftarNavbar />
           <MasukNavbar />
         </div>
