@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import z from "zod";
-import zxcvbn from "zxcvbn";
+// import zxcvbn from "zxcvbn";
 import registerAnimation from "@/assets/register_animation.json";
 import { createUser } from "./actions";
 import { formSchemeDaftar } from "@/utils/schema";
@@ -27,7 +27,7 @@ const Daftar = () => {
     register,
     handleSubmit,
     formState: { errors },
-    watch,
+    // watch,
   } = useForm<FormDaftarType>({
     defaultValues: {
       email: "",
@@ -39,8 +39,8 @@ const Daftar = () => {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const password = watch("password");
-  const strongthPassword = zxcvbn(password);
+  // const password = watch("password");
+  // const strongthPassword = zxcvbn(password);
   const handleDaftar: SubmitHandler<FormDaftarType> = async ({
     email,
     password,
