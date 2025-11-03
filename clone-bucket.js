@@ -1,11 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
+import "dotenv/config";
 
-const CLOUD_URL = "https://cbrvwzqvysexfxqrceix.supabase.co";
-const CLOUD_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNicnZ3enF2eXNleGZ4cXJjZWl4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODExNDMzNywiZXhwIjoyMDczNjkwMzM3fQ.wrcLXDuCckdXJQlEBdsc94q5gcasy9solI4MplMaDvM";
+const CLOUD_URL = process.env.SUPABASE_CLOUD_URL;
+const CLOUD_KEY = process.env.SUPABASE_CLOUD_KEY;
 
-const LOCAL_URL = "http://localhost:54321";
-const LOCAL_KEY = "sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz";
+const LOCAL_URL = process.env.SUPABASE_LOCAL_URL;
+const LOCAL_KEY = process.env.SUPABASE_LOCAL_KEY;
 
 const cloud = createClient(CLOUD_URL, CLOUD_KEY);
 const local = createClient(LOCAL_URL, LOCAL_KEY);
@@ -23,13 +23,13 @@ async function cloneBuckets() {
         public: bucket.public,
         fileSizeLimit: bucket.file_size_limit,
         allowedMimeTypes: bucket.allowed_mime_types,
-      }
+      },
     );
 
     if (createError && !createError.message.includes("already exists")) {
       console.error(
         `❌ Gagal membuat bucket ${bucket.name}:`,
-        createError.message
+        createError.message,
       );
     } else {
       console.log(`✅ Bucket ${bucket.name} berhasil dibuat`);

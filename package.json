@@ -17,6 +17,7 @@
     "@types/zxcvbn": "^4.4.5",
     "dexie": "^4.2.1",
     "dexie-react-hooks": "^4.2.0",
+    "dotenv": "^17.2.3",
     "lottie-react": "^2.4.1",
     "motion": "^12.23.12",
     "next": "^16.0.1",
