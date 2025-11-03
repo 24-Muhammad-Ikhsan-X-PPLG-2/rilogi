@@ -3,6 +3,7 @@
 import AddContact from "@/components/Chat/add-contact";
 import Chat from "@/components/Chat/chat";
 import ListKontak from "@/components/Chat/list-kontak";
+import Settings from "@/components/Chat/settings";
 import { useChat } from "@/providers/chat-provider";
 import { useTheme } from "@/providers/theme-provider";
 import { allMessages, db } from "@/utils/db";
@@ -36,8 +37,10 @@ export type StatusBlockType =
   | "Anda memblokir kontak ini."
   | "Kontak ini memblokir anda.";
 
-const ChatClient: FC<ChatClientProps> = ({ profile }) => {
+const ChatClient: FC<ChatClientProps> = ({ profile: ProfileServer }) => {
+  const [profile, setProfile] = useState<ProfileType>(ProfileServer);
   const [showAddContact, setShowAddContact] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const { theme } = useTheme();
   const { chatWith, contextMenuMessage } = useChat();
   const supabase = createClient();
@@ -98,11 +101,28 @@ const ChatClient: FC<ChatClientProps> = ({ profile }) => {
         handleBlockKontak
       )
       .subscribe();
+    const profilesChannel = supabase
+      .channel("profiles")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        handleProfiles
+      )
+      .subscribe();
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(blockKontakChannel);
+      supabase.removeChannel(profilesChannel);
     };
   }, []);
+  const handleProfiles = (
+    payload: RealtimePostgresChangesPayload<ProfileType>
+  ) => {
+    if (payload.eventType === "UPDATE" && payload.new.id === profile.id) {
+      const updatedProfile = payload.new;
+      setProfile(updatedProfile);
+    }
+  };
   const handleBlockKontak = async (
     payload: RealtimePostgresChangesPayload<BlockKontakType>
   ) => {
@@ -193,7 +213,17 @@ const ChatClient: FC<ChatClientProps> = ({ profile }) => {
                 className="w-8  active:scale-90 cursor-pointer transition duration-150"
                 onClick={() => setShowAddContact(true)}
               />
-              <Cog8ToothIcon className="w-8  cursor-pointer active:scale-90 transition duration-150" />
+              <div className="relative">
+                <Cog8ToothIcon
+                  className="w-8  cursor-pointer active:scale-90 transition duration-150"
+                  onClick={() => setShowSettings((prev) => !prev)}
+                />
+                <Settings
+                  show={showSettings}
+                  setShow={setShowSettings}
+                  profile={profile}
+                />
+              </div>
             </div>
           </div>
           <div className="align-baseline border border-gray-800 ml-2"></div>

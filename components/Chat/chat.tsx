@@ -12,6 +12,8 @@ import {
   Bars3Icon,
   ChatBubbleLeftRightIcon,
   PaperAirplaneIcon,
+  PhotoIcon,
+  PlusIcon,
 } from "@heroicons/react/24/outline";
 import { PostgrestMaybeSingleResponse } from "@supabase/supabase-js";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -19,6 +21,7 @@ import { FC, FormEventHandler, useEffect, useRef, useState } from "react";
 import TextareaAutoSize from "react-textarea-autosize";
 import Message from "./message";
 import { toast } from "react-toastify";
+import ChatInsert from "./chat-insert";
 
 type ChatProps = {
   profile: ProfileType;
@@ -30,6 +33,8 @@ const Chat: FC<ChatProps> = ({ profile, messages }) => {
   const supabase = createClient();
   const [isLoading, setIsLoading] = useState(false);
   const [messageInput, setMessageInput] = useState("");
+  const [showChatInsert, setShowChatInsert] = useState(false);
+  const [fileImg, setFileImg] = useState<File | null>(null);
   const { chatWith, kontakGlobal, contextMenuMessage } = useChat();
   const blockKontakGlobal = useLiveQuery(() => db?.blockKontak.toArray()!);
   const [statusBlock, setStatusBlock] = useState("");
@@ -63,7 +68,7 @@ const Chat: FC<ChatProps> = ({ profile, messages }) => {
       return;
     }
     const lawanBicara = data.list_kontak.filter(
-      (item) => item.rilo_id == chatWith,
+      (item) => item.rilo_id == chatWith
     );
     if (lawanBicara.length === 0) {
       setProfileLawanBicara({
@@ -80,7 +85,7 @@ const Chat: FC<ChatProps> = ({ profile, messages }) => {
       ?.filter(
         (val) =>
           (val.user == profile.rilo_id && val.to_user == chatWith) ||
-          (val.user == chatWith && val.to_user == profile.rilo_id),
+          (val.user == chatWith && val.to_user == profile.rilo_id)
       )
       .at(0);
     if (blockKontakFilter && blockKontakFilter.user == profile.rilo_id) {
@@ -119,7 +124,13 @@ const Chat: FC<ChatProps> = ({ profile, messages }) => {
       return;
     }
     setIsLoading(true);
-    await sendMessage(profile?.rilo_id ?? "", chatWith, messageInput);
+    await sendMessage(
+      profile?.rilo_id ?? "",
+      chatWith,
+      messageInput,
+      fileImg ?? undefined
+    );
+    setFileImg(null);
     setMessageInput("");
     setIsLoading(false);
   };
@@ -137,10 +148,20 @@ const Chat: FC<ChatProps> = ({ profile, messages }) => {
         ) : (
           <>
             {/* Header */}
-            <div className="w-full sticky top-0 shadow-xl bg-secondary p-3 rounded-xl flex justify-between items-center z-10">
+            <div
+              className={`w-full sticky top-0 shadow-xl ${
+                theme === "dark"
+                  ? "bg-gray-800 text-white"
+                  : "bg-secondary text-black"
+              } p-3 rounded-xl flex justify-between items-center z-10`}
+            >
               <div className="flex items-center gap-4">
                 <div
-                  className={`h-10 w-10 rounded-full ${profileLawanBicara ? "bg-primary" : "bg-gray-500 animate-pulse"} flex justify-center items-center text-white font-semibold`}
+                  className={`h-10 w-10 rounded-full ${
+                    profileLawanBicara
+                      ? "bg-primary"
+                      : "bg-gray-500 animate-pulse"
+                  } flex justify-center items-center text-white font-semibold`}
                 >
                   {profileLawanBicara &&
                     getInitials(profileLawanBicara.nama_kontak)}
@@ -180,8 +201,22 @@ const Chat: FC<ChatProps> = ({ profile, messages }) => {
             {statusBlock !== "Anda memblokir kontak ini." && (
               <form
                 onSubmit={onSubmitMessage}
-                className="w-[90%] bg-secondary shadow-xl h-fit max-h-32 overflow-y-visible p-5 flex items-end gap-4 rounded-2xl mx-auto mt-1"
+                className={`w-[90%] ${
+                  theme === "dark"
+                    ? "bg-gray-800 text-white"
+                    : "bg-secondary text-black"
+                } shadow-xl h-fit max-h-32 overflow-y-visible p-5 flex items-end gap-4 rounded-2xl mx-auto mt-1 relative`}
               >
+                <ChatInsert
+                  setFileImg={setFileImg}
+                  fileImg={fileImg}
+                  setShow={setShowChatInsert}
+                  show={showChatInsert}
+                />
+                <PlusIcon
+                  className="w-7 cursor-pointer text-primary"
+                  onClick={() => setShowChatInsert((prev) => !prev)}
+                />
                 <TextareaAutoSize
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}

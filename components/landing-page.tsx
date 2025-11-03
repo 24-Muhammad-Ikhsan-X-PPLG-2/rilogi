@@ -20,7 +20,7 @@ const LandingPage = () => {
         className={`min-h-screen bg-gradient-to-br from-[#F5F2ED] via-[#EADAC8] to-[#D4A373] flex`}
       >
         <Navbar />
-        <div className="px-4 flex md:flex-row flex-col justify-center md:gap-36 mx-auto items-center">
+        <div className="md:px-14 flex md:flex-row flex-col justify-center md:gap-36 mx-auto items-center">
           <div className="mb-5 block md:hidden">
             <Image
               width={300}

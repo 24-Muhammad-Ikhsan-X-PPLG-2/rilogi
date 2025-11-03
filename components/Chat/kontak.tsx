@@ -21,6 +21,7 @@ import { toast } from "react-toastify";
 import { createClient } from "@/utils/supabase/client";
 import { db } from "@/utils/db";
 import { useLiveQuery } from "dexie-react-hooks";
+import { AnimatePresence, motion } from "motion/react";
 
 type KontakProps = {
   item: ChatContact;
@@ -152,84 +153,91 @@ const Kontak: FC<KontakProps> = ({ item, profile }) => {
           )}
         </div>
       </div>
-      {menuPos && (
-        <div
-          className="absolute bg-gray-950/50 backdrop-filter backdrop-blur-md w-fit h-fit p-2 z-[9999] rounded-tr-xl rounded-bl-xl rounded-br-xl"
-          ref={contextMenuRef}
-          style={{
-            top: menuPos.y,
-            left: menuPos.x,
-          }}
-        >
-          {item.rilo_id !== item.nama_kontak ? (
-            <>
-              <div className="text-red-600 flex gap-1 hover:bg-gray-800 p-2 rounded cursor-pointer transition duration-200 active:scale-90">
-                <TrashIcon className="w-5" />
-                <p className="text-sm">Hapus kontak ini.</p>
-              </div>
-              {isBlockByMe ? (
-                <div
-                  className="text-red-600 flex gap-1 hover:bg-gray-800 p-2 rounded cursor-pointer transition duration-200 active:scale-90"
-                  onClick={handleOpenBlockKontak}
-                >
-                  <NoSymbolIcon className="w-5" />
-                  <p className="text-sm">Buka blok kontak ini.</p>
+      <AnimatePresence mode="wait">
+        {menuPos && (
+          <motion.div
+            key={item.rilo_id}
+            className="absolute bg-gray-950/50 backdrop-filter backdrop-blur-md w-fit h-fit p-2 z-[9999] rounded-tr-xl rounded-bl-xl rounded-br-xl"
+            ref={contextMenuRef}
+            style={{
+              top: menuPos.y,
+              left: menuPos.x,
+            }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2 }}
+          >
+            {item.rilo_id !== item.nama_kontak ? (
+              <>
+                <div className="text-red-600 flex gap-1 hover:bg-gray-800 p-2 rounded cursor-pointer transition duration-200 active:scale-90">
+                  <TrashIcon className="w-5" />
+                  <p className="text-sm">Hapus kontak ini.</p>
                 </div>
-              ) : (
-                <div
-                  className="text-red-600 flex gap-1 hover:bg-gray-800 p-2 rounded cursor-pointer transition duration-200 active:scale-90"
-                  onClick={handleBlockKontak}
+                {isBlockByMe ? (
+                  <div
+                    className="text-red-600 flex gap-1 hover:bg-gray-800 p-2 rounded cursor-pointer transition duration-200 active:scale-90"
+                    onClick={handleOpenBlockKontak}
+                  >
+                    <NoSymbolIcon className="w-5" />
+                    <p className="text-sm">Buka blok kontak ini.</p>
+                  </div>
+                ) : (
+                  <div
+                    className="text-red-600 flex gap-1 hover:bg-gray-800 p-2 rounded cursor-pointer transition duration-200 active:scale-90"
+                    onClick={handleBlockKontak}
+                  >
+                    <NoSymbolIcon className="w-5" />
+                    <p className="text-sm">Blok kontak ini.</p>
+                  </div>
+                )}
+                <div className="flex gap-1 hover:bg-gray-800 p-2 rounded cursor-pointer transition duration-200 active:scale-90">
+                  <PencilIcon className="w-5" />
+                  <p className="text-sm">Edit kontak ini.</p>
+                </div>
+              </>
+            ) : showAddContact ? (
+              <>
+                <form
+                  onSubmit={handleSaveContact}
+                  className="flex gap-1 p-2 rounded cursor-pointer transition duration-200 h-12"
                 >
+                  <input
+                    type="text"
+                    className="w-full outline-none border border-accent py-1 px-1 rounded placeholder:text-gray-500"
+                    placeholder="Nama kontak"
+                    value={namaKontak}
+                    readOnly={isLoadingAddContact}
+                    onChange={({ target: { value } }) => setNamaKontak(value)}
+                  />
+                  <button
+                    className="bg-primary active:scale-95 transition duration-200 text-sm py-1 px-3 rounded font-semibold cursor-pointer disabled:bg-gray-500"
+                    disabled={isLoadingAddContact}
+                  >
+                    Simpan
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <div className="text-red-600 flex gap-1 hover:bg-gray-800 p-2 rounded cursor-pointer transition duration-200 active:scale-90">
                   <NoSymbolIcon className="w-5" />
                   <p className="text-sm">Blok kontak ini.</p>
                 </div>
-              )}
-              <div className="flex gap-1 hover:bg-gray-800 p-2 rounded cursor-pointer transition duration-200 active:scale-90">
-                <PencilIcon className="w-5" />
-                <p className="text-sm">Edit kontak ini.</p>
-              </div>
-            </>
-          ) : showAddContact ? (
-            <>
-              <form
-                onSubmit={handleSaveContact}
-                className="flex gap-1 p-2 rounded cursor-pointer transition duration-200 h-12"
-              >
-                <input
-                  type="text"
-                  className="w-full outline-none border border-accent py-1 px-1 rounded placeholder:text-gray-500"
-                  placeholder="Nama kontak"
-                  value={namaKontak}
-                  readOnly={isLoadingAddContact}
-                  onChange={({ target: { value } }) => setNamaKontak(value)}
-                />
-                <button
-                  className="bg-primary active:scale-95 transition duration-200 text-sm py-1 px-3 rounded font-semibold cursor-pointer disabled:bg-gray-500"
-                  disabled={isLoadingAddContact}
+                <div
+                  className="flex gap-1 hover:bg-gray-800 p-2 rounded cursor-pointer transition duration-200 active:scale-90"
+                  onClick={() => {
+                    setShowAddContact(true);
+                  }}
                 >
-                  Simpan
-                </button>
-              </form>
-            </>
-          ) : (
-            <>
-              <div className="text-red-600 flex gap-1 hover:bg-gray-800 p-2 rounded cursor-pointer transition duration-200 active:scale-90">
-                <NoSymbolIcon className="w-5" />
-                <p className="text-sm">Blok kontak ini.</p>
-              </div>
-              <div
-                className="flex gap-1 hover:bg-gray-800 p-2 rounded cursor-pointer transition duration-200 active:scale-90"
-                onClick={() => {
-                  setShowAddContact(true);
-                }}
-              >
-                <UserPlusIcon className="w-5" />
-                <p className="text-sm">Tambah ke kontak.</p>
-              </div>
-            </>
-          )}
-        </div>
-      )}
+                  <UserPlusIcon className="w-5" />
+                  <p className="text-sm">Tambah ke kontak.</p>
+                </div>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

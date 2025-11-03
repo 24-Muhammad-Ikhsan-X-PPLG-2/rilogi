@@ -24,7 +24,7 @@ export type Chat = KontakType & {
 
 export async function getRecentContacts(
   listKontak: ListKontakType[],
-  currentUserId: string // id user yang sedang login
+  currentUserId: string, // id user yang sedang login
 ): Promise<ListKontakType[]> {
   const supabase = createClient();
   // Ambil semua pesan yang terkait dengan kontak-kontak ini
@@ -91,7 +91,7 @@ export function mergeChatWithContacts(
   kontak: ListKontakType[],
   currentUserId: string,
   lastReadMap: Record<string, string>, // key = rilo_id, value = ISO string last read
-  activeChatId?: string
+  activeChatId?: string,
 ): ChatContact[] {
   const normalize = (s: string) => s.replace(/\s+/g, "").replace(/^\+/, "");
   const curKey = normalize(currentUserId);
@@ -146,7 +146,7 @@ export function mergeChatWithContacts(
     const prefix = isFromMe ? "You: " : "";
 
     if (msg.delete) return `${prefix}Pesan dihapus`;
-
+    if (msg.pesan.length > 20) return `${prefix}${msg.pesan.slice(0, 20)}...`;
     return `${prefix}${msg.pesan}`;
   };
 
@@ -163,7 +163,7 @@ export function mergeChatWithContacts(
       unreadCount:
         activeChatId && normalize(activeChatId) === key
           ? 0
-          : unreadCountMap.get(key) ?? 0,
+          : (unreadCountMap.get(key) ?? 0),
     });
   }
 
@@ -178,7 +178,7 @@ export function mergeChatWithContacts(
         unreadCount:
           activeChatId && normalize(activeChatId) === key
             ? 0
-            : unreadCountMap.get(key) ?? 0,
+            : (unreadCountMap.get(key) ?? 0),
       });
     }
   }
@@ -196,14 +196,14 @@ export function mergeChatWithContacts(
 export function filterMessagesByBlock(
   messages: MessageType[],
   currentUser: string,
-  blocks: BlockKontakType[]
+  blocks: BlockKontakType[],
 ): MessageType[] {
   // Jika tidak ada blok sama sekali, kembalikan semua pesan
   if (!blocks || blocks.length === 0) return messages;
 
   // Buat map user yang punya relasi blok dengan currentUser
   const relatedBlocks = blocks.filter(
-    (b) => b.user === currentUser || b.to_user === currentUser
+    (b) => b.user === currentUser || b.to_user === currentUser,
   );
 
   // Jika currentUser tidak terlibat dalam blok apa pun
@@ -215,7 +215,7 @@ export function filterMessagesByBlock(
     const block = relatedBlocks.find(
       (b) =>
         (b.user === msg.from && b.to_user === msg.to) ||
-        (b.user === msg.to && b.to_user === msg.from)
+        (b.user === msg.to && b.to_user === msg.from),
     );
 
     // Kalau tidak ada blok yang relevan dengan pesan ini → tampilkan
@@ -242,7 +242,7 @@ export function filterMessagesByBlock(
 
 export function useSafeAsyncEffect(
   effect: (isMounted: () => boolean) => void | Promise<void>,
-  deps: any[]
+  deps: any[],
 ) {
   useEffect(() => {
     let active = true;
@@ -265,7 +265,7 @@ export async function updateLastRead(user_id: string, contact_id: string) {
     },
     {
       onConflict: "user_id, contact_id",
-    }
+    },
   );
   if (error) {
     console.error(error);
@@ -276,7 +276,7 @@ export function generateFiveDigitNumber(): number {
   return Math.floor(10000 + Math.random() * 90000);
 }
 
-export async function sendMessage(user_id: string, to: string, pesan: string) {
+export async function sendMessage(user_id: string, to: string, pesan: string, images?: File) {
   const supabase = createClient();
   const { data: DataBlockKontak } = (await supabase
     .from("block_kontak")
@@ -284,7 +284,7 @@ export async function sendMessage(user_id: string, to: string, pesan: string) {
   const blockKontak = DataBlockKontak?.find(
     (val) =>
       (val.user === user_id && val.to_user === to) ||
-      (val.user === to && val.to_user === user_id)
+      (val.user === to && val.to_user === user_id),
   );
   if (blockKontak) {
     await db?.messages.put({
@@ -295,6 +295,24 @@ export async function sendMessage(user_id: string, to: string, pesan: string) {
       delete: false,
       created_at: new Date().toISOString(),
     });
+    return;
+  }
+  if(images) {
+    const { error, data } = await supabase.storage.from("foto").upload(`${user_id}/${Date.now()}_${Math.random().toString(36).substring(2, 15)}.jpg`, images);
+    if (error) {
+      console.error(error);
+      return;
+    }
+    const imageUrl = supabase.storage.from("foto").getPublicUrl(data.path).data.publicUrl;
+    const { error: insertError } = await supabase.from("pesan").insert({
+      from: user_id,
+      to,
+      pesan,
+      image: imageUrl,
+    });
+    if (insertError) {
+      console.error(insertError);
+    }
     return;
   }
   const { error } = await supabase.from("pesan").insert({
@@ -310,7 +328,7 @@ export async function sendMessage(user_id: string, to: string, pesan: string) {
 export async function updateContact(
   userRiloId: string,
   userId: string,
-  messages: MessageType[]
+  messages: MessageType[],
 ) {
   const supabase = createClient();
   const { data: DataKontak } = (await supabase
@@ -331,7 +349,7 @@ export async function updateContact(
     messages,
     DataKontak?.list_kontak ?? [],
     userRiloId,
-    map
+    map,
   );
   return contacts;
 }

@@ -15,6 +15,8 @@ import z from "zod";
 import { AddContactAction } from "./action-add-contact";
 import { toast } from "react-toastify";
 import { useTheme } from "@/providers/theme-provider";
+import { useSafeAsyncEffect } from "@/utils/lib";
+import { createClient } from "@/utils/supabase/client";
 
 type FormAddContact = z.infer<typeof formSchemeAddContact>;
 type AddContactProps = {
@@ -33,6 +35,7 @@ const AddContact: FC<AddContactProps> = ({
     handleSubmit,
     formState: { errors },
     reset,
+    setError,
   } = useForm<FormAddContact>({
     resolver: zodResolver(formSchemeAddContact),
     defaultValues: {
@@ -61,10 +64,23 @@ const AddContact: FC<AddContactProps> = ({
     rilo_id,
     nama_kontak,
   }) => {
+    setIsLoading(true);
+    const supabase = createClient();
+    const { error: ErrorSupabase, data: DataSupabase } = await supabase
+      .from("profiles")
+      .select("*")
+      .like("rilo_id", `%${rilo_id}%`);
+    if (ErrorSupabase || DataSupabase.length === 0) {
+      setIsLoading(false);
+      setError("rilo_id", {
+        type: "manual",
+        message: "Rilo ID tidak ditemukan.",
+      });
+      return;
+    }
     const formData = new FormData();
     formData.set("rilo_id", rilo_id);
     formData.set("nama_kontak", nama_kontak);
-    setIsLoading(true);
     const res = await AddContactAction(formData);
     setIsLoading(false);
     if (res.error) {
@@ -181,13 +197,25 @@ const AddContact: FC<AddContactProps> = ({
               </p>
             )}
           </div>
-          <button
-            className="bg-primary text-white w-full font-semibold text-base py-2 rounded hover:bg-primary/95 cursor-pointer transition duration-200 active:scale-90 disabled:bg-gray-600"
-            type="submit"
-            disabled={isLoading}
-          >
-            Simpan
-          </button>
+          <div className="flex justify-end gap-2">
+            <button
+              className="bg-gray-600 text-white px-4 font-semibold text-sm py-2 rounded-lg hover:bg-600/95 cursor-pointer transition duration-200 active:scale-90 disabled:bg-gray-600"
+              type="button"
+              onClick={() => {
+                reset();
+                setShow(false);
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              className="bg-primary text-white px-4 font-semibold text-sm py-2 rounded-lg hover:bg-primary/95 cursor-pointer transition duration-200 active:scale-90 disabled:bg-gray-600"
+              type="submit"
+              disabled={isLoading}
+            >
+              Simpan
+            </button>
+          </div>
         </form>
       </div>
     </div>

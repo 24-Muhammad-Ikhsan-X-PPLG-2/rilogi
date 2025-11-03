@@ -4,5 +4,6 @@ export type MessageType = {
   to: string;
   pesan: string;
   delete: boolean;
+  image?: string;
   created_at: string;
 };

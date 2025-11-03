@@ -22,6 +22,7 @@ import { db } from "@/utils/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useTheme } from "@/providers/theme-provider";
 import KontakLoading from "./kontak-loading";
+import { UserCircleIcon } from "@heroicons/react/24/outline";
 
 type ListKontakProps = {
   profile: ProfileType;
@@ -87,7 +88,13 @@ const ListKontak: FC<ListKontakProps> = ({ profile }) => {
     await db?.kontak.clear();
     await db?.lastRead.clear();
     await db?.messages.bulkPut(DataMessagesBaru ?? []);
-    await db?.kontak.put(DataKontak!);
+    await db?.kontak.put(
+      DataKontak ?? {
+        id: profile.id,
+        list_kontak: [],
+        created_at: new Date().toISOString(),
+      }
+    );
     await db?.lastRead.bulkPut(lastRead ?? []);
     console.log("DB lokal terupdate");
     const contacts = mergeChatWithContacts(
@@ -247,6 +254,9 @@ const ListKontak: FC<ListKontakProps> = ({ profile }) => {
 
   return (
     <div className="w-full p-2">
+      <div className="w-full bg-gradient-to-br from-gray-500 to-gray-800 shadow-2xl px-2 py-2 rounded-full mb-3">
+        <p className="text-gray-950 text-center font-semibold">Rilogi</p>
+      </div>
       {/* {kontak.map((item, idx) => (
         <Kontak profile={profile} item={item} key={idx} />
       ))} */}
@@ -256,6 +266,12 @@ const ListKontak: FC<ListKontakProps> = ({ profile }) => {
           kontak.map((item, idx) => (
             <Kontak profile={profile} item={item} key={idx} />
           ))}
+      {kontak.length === 0 && !isLoadingKontak && (
+        <div className="w-full h-full flex flex-col justify-center items-center">
+          <UserCircleIcon className="w-10" />
+          <p className="text-gray-500 italic">Tidak ada kontak tersedia</p>
+        </div>
+      )}
     </div>
   );
 };

@@ -11,6 +11,8 @@ import zxcvbn from "zxcvbn";
 import registerAnimation from "@/assets/register_animation.json";
 import { createUser } from "./actions";
 import { formSchemeDaftar } from "@/utils/schema";
+import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
 
 const libertinusSans = Libertinus_Serif({
   variable: "--font-libertinus-serif",
@@ -34,6 +36,7 @@ const Daftar = () => {
     },
     resolver: zodResolver(formSchemeDaftar),
   });
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const password = watch("password");
@@ -50,12 +53,23 @@ const Daftar = () => {
     setIsLoading(true);
     const res = await createUser(formData);
     setIsLoading(false);
-    alert(res.message);
+    if (res.error) {
+      toast.error(res.message);
+    }
+    toast.success("Berhasil daftar! Silakan masuk.");
+    router.push("/");
   };
   return (
     <div className="min-h-screen flex gap-10 justify-center items-center bg-gradient-to-br from-[#F5F2ED] via-[#f0e6dc] to-[#8B5E3C]">
       <div>
-        <Lottie animationData={registerAnimation} loop style={{ width: 400 }} />
+        <Lottie
+          animationData={registerAnimation}
+          loop
+          style={{ width: 400 }}
+          rendererSettings={{
+            progressiveLoad: true,
+          }}
+        />
       </div>
       <div className="bg-secondary rounded-2xl w-1/2 h-fit shadow-xl border border-slate-200 p-5">
         <h1
@@ -138,7 +152,7 @@ const Daftar = () => {
               href="/masuk"
               className="relative inline-block font-medium cursor-pointer transition-colors duration-200
     text-gray-500
-    after:absolute after:left-0 after:bottom-0 
+    after:absolute after:left-0 after:bottom-0
     after:h-[2px] after:w-full after:origin-left after:scale-x-0
     after:bg-gray-500 after:transition-transform after:duration-300
     hover:after:scale-x-100 text-sm"

@@ -21,6 +21,7 @@ import {
 import { toast } from "react-toastify";
 import { createClient } from "@/utils/supabase/client";
 import { db } from "@/utils/db";
+import { useTheme } from "@/providers/theme-provider";
 
 type MessageProps = {
   message: MessageType;
@@ -28,10 +29,15 @@ type MessageProps = {
 
 const Message: FC<MessageProps> = ({ message }) => {
   const { chatWith, setContextMenuMessage } = useChat();
+  const { theme } = useTheme();
   const isFromChatWith = message.from === chatWith;
   const containerClasses = `w-fit max-w-xs px-4 py-2 rounded-2xl z-[999] ${
     isFromChatWith
-      ? "bg-secondary rounded-tl-none"
+      ? `${
+          theme === "dark"
+            ? "bg-gray-800 text-white"
+            : "bg-secondary text-black"
+        } rounded-tl-none`
       : "bg-primary ml-auto rounded-tr-none"
   }`;
   const textClasses = `text-sm ${isFromChatWith ? "" : "text-secondary"}`;
@@ -128,6 +134,15 @@ const Message: FC<MessageProps> = ({ message }) => {
             <NoSymbolIcon className="w-5" />
             <p className={textClasses}>Pesan dihapus</p>
           </div>
+        ) : message.image ? (
+          <div className={message.from === chatWith ? "" : "text-end"}>
+            <img
+              src={message.image}
+              alt="message image"
+              className="w-48 h-48 object-cover rounded-lg mb-2"
+            />
+            <p className={textClasses}>{message.pesan}</p>
+          </div>
         ) : (
           <p className={textClasses}>{message.pesan}</p>
         )}
@@ -149,7 +164,9 @@ const Message: FC<MessageProps> = ({ message }) => {
             }}
             key={message.id}
             ref={contextMenuRef}
-            className={`absolute bg-gray-500/50 rounded backdrop-filter backdrop-blur-lg z-[9999] w-64 h-fit shadow text-gray-200`}
+            className={`absolute ${
+              theme === "dark" ? "bg-gray-800/50" : "bg-gray-500/50"
+            } rounded backdrop-filter backdrop-blur-lg z-[9999] w-64 h-fit shadow text-gray-200`}
             style={{
               top: menuPos.y,
               left: menuPos.x,
@@ -170,7 +187,7 @@ const Message: FC<MessageProps> = ({ message }) => {
             </div>
             {message.from !== chatWith && (
               <>
-                <hr />
+                <hr className="text-gray-600" />
                 <div className="p-2">
                   <ContextMenuList
                     icon={<TrashIcon className="w-6" />}

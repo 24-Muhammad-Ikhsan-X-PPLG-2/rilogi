@@ -10,13 +10,13 @@ const AnimateRoute: FC<PropsWithChildren> = ({ children }) => {
       <motion.div
         suppressHydrationWarning
         key={pathname}
-        initial={{ x: 100, opacity: 0 }} // mulai dari kanan
-        animate={{ x: 0, opacity: 1 }} // animasi ke tengah
-        transition={{
-          type: "spring",
-          stiffness: 200, // kekakuan pegas
-          damping: 10, // redaman (semakin kecil semakin goyang)
-        }}
+        // initial={{ x: 100, opacity: 0 }} // mulai dari kanan
+        // animate={{ x: 0, opacity: 1 }} // animasi ke tengah
+        // transition={{
+        //   type: "spring",
+        //   stiffness: 200, // kekakuan pegas
+        //   damping: 10, // redaman (semakin kecil semakin goyang)
+        // }}
         className="absolute w-full"
       >
         {children}
